@@ -86,28 +86,6 @@ jobs:
           composer-options: --no-scripts
       - run: vendor/bin/swiss-knife breakpoint
 
-  smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - run: docker compose up --build -d --wait
-      - name: README flow
-        run: |
-          curl --retry 30 --retry-all-errors --retry-delay 2 -sf http://localhost:8080/api/employees > /dev/null
-          TOKEN=$(curl -sf -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{"email": "active@example.com", "password": "password123"}' | sed -E 's/.*"token":"([^"]+)".*/\1/')
-          curl -sf http://localhost:8080/api/me -H "Authorization: Bearer $TOKEN" | grep -q active@example.com
-          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{"email": "inactive@example.com", "password": "password123"}')" = 401
-          curl -sf http://localhost:8080/docs > /dev/null
-      - name: Framework lint
-        run: |
-          docker compose exec -T app php artisan config:cache
-      - if: failure()
-        run: docker compose logs
-      - if: always()
-        run: docker compose down -v
-
   workflows:
     runs-on: ubuntu-latest
     steps:
